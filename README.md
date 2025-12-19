@@ -1,8 +1,8 @@
-# Unofficial SM64 Co-op Deluxe AppImage
+# Unofficial SM64 Coop Deluxe AppImage
 
 ![AppImage Sm64CoopDx](.img/portada.jpg)
 
-A portable, universal Linux build for **SM64 Coop Deluxe**.
+A portable, (universal fuse x86_64) Linux build for **SM64 Coop Deluxe**.
 Built with **go-appimage** to ensure compatibility across modern (Arch, Fedora 40+) and traditional (Ubuntu, Debian) distributions without complex setups.
 
 ## Downloads
