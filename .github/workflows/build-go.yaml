@@ -88,7 +88,7 @@ jobs:
           ls -lh *.AppImage *.zip 2>/dev/null || echo "⚠️ No se encontraron archivos"
           
           if ls *.AppImage 1> /dev/null 2>&1; then
-            echo "✅ AppImage generado correctamente"
+            echo "AppImage generado correctamente"
           else
             echo "::error::No se generó el AppImage"
             exit 1
@@ -98,7 +98,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           TAG_NAME="${{ github.event.inputs.tag_name }}"
-          echo "🏷️ Creando tag: $TAG_NAME"
+          echo "Creando tag: $TAG_NAME"
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -106,7 +106,7 @@ jobs:
           git tag -a "$TAG_NAME" -m "Release $TAG_NAME - FUSE 2/3 Compatible"
           git push origin "$TAG_NAME"
           
-          echo "✅ Tag creado y pusheado: $TAG_NAME"
+          echo "Tag creado y pusheado: $TAG_NAME"
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
@@ -117,25 +117,25 @@ jobs:
             *.AppImage
             mods-*.zip
           body: |
-            ## 🎮 SM64 Co-op Deluxe AppImage
+            ## SM64 Coop Deluxe AppImage
             
-            ### ✨ What's New
+            ### What's New
             - Built with **go-appimage** for universal compatibility
-            - ✅ **FUSE 2** and **FUSE 3** support
-            - ✅ Works on modern distros (CachyOS, Fedora 40+, Arch)
-            - ✅ Works on traditional distros (Ubuntu, Debian)
+            - **FUSE 2** and **FUSE 3** support
+            - Works on modern distros (CachyOS, Fedora 40+, Arch)
+            - Works on traditional distros (Ubuntu, Debian)
             
             ### 📦 Downloads
             - **Sm64CoopDX-x86_64.AppImage** - Main application
             - **mods.zip** - Mods package
             
-            ### 🚀 Quick Start
+            ### Quick Start
             ```bash
             chmod +x Sm64CoopDX-*-x86_64.AppImage
             ./Sm64CoopDX-*-x86_64.AppImage
             ```
             
-            ### 📋 Requirements
+            ### Requirements
             - Place your ROM at: `~/.local/share/sm64coopdx/baserom.us.z64`
             
             ---
@@ -147,7 +147,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "## 🎉 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Generated Files:" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

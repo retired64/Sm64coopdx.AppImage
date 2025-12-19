@@ -1,3 +1,19 @@
+## How to Build Your Own AppImage (Fork Guide)
+
+Want to generate the AppImage yourself? You can do it entirely through GitHub without installing anything on your computer!
+
+1. **Fork the Repository**: Click the **Fork** button at the top right of this page to copy this repository to your own GitHub account.
+2. **Go to Actions**: Open the **Actions** tab in your forked repository. (If asked, click the green button to enable workflows).
+3. **Select the Workflow**: In the left sidebar, click on **Build SM64CoopDX AppImage (FUSE 2/3 Compatible)**.
+4. **Run the Workflow**:
+   - Click the **Run workflow** dropdown button on the right.
+   - **Tag name**: You must enter a version name (e.g., `v1.5-custom`). This will be the name of your release.
+   - **Create a GitHub release?**: Leave this box checked.
+   - Click the green **Run workflow** button.
+
+**Wait & Download**: After a few minutes, the job will finish. Navigate to the **Releases** section (on the right side of your repository's main page) to find your new Release containing the AppImage and mods zip!
+
+
 # Creating a Git Tag from Terminal
 
 ## Step-by-Step Instructions
