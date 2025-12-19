@@ -102,4 +102,4 @@ If the game does not launch, run the AppImage from the terminal to see the error
 * **Build maintained by:** Retired64
 * **Build Tool:** Custom Python script using `go-appimage`.
 
-See the full [CREDITS.md](https://www.google.com/search?q=./CREDITS.md) for the original development team.
+See the full [CREDITS.md](CREDITS.md) for the original development team.
