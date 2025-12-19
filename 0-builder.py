@@ -49,7 +49,7 @@ exec "${EXEC}" "$@"
 DESKTOP_TEMPLATE = """[Desktop Entry]
 Version={version}
 Type=Application
-Name=SM64 Co-op Deluxe
+Name=SM64 Coop Deluxe
 GenericName=Multiplayer Platformer
 Comment=Online multiplayer project for the Super Mario 64 PC port
 TryExec=sm64coopdx
@@ -69,7 +69,6 @@ MimeType=x-scheme-handler/sm64coopdx;
 def make_executable(path: Path):
     """Otorga permisos rwxr-xr-x (755) corrigiendo las constantes de stat"""
     if path.exists():
-        # Corregido: stat.S_IXUSR, stat.S_IXGRP, stat.S_IXOTH en MAYÚSCULAS
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 def download(url: str, out: Path):

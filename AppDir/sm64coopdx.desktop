@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.4
+Type=Application
+Name=SM64 Coop Deluxe
+GenericName=Multiplayer Platformer
+Comment=Online multiplayer project for the Super Mario 64 PC port
+TryExec=sm64coopdx
+Exec=sm64coopdx %U
+Icon=sm64coopdx
+Terminal=false
+StartupNotify=true
+Categories=Game;ActionGame;AdventureGame;
+Keywords=mario;super mario;sm64;nintendo;platformer;multiplayer;coop;
+MimeType=x-scheme-handler/sm64coopdx;
+X-AppImage-Version=4f190d2
