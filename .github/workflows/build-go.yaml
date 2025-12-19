@@ -1,0 +1,155 @@
+name: Build SM64CoopDX AppImage (FUSE 2/3 Compatible)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.4-fuse3)'
+        required: true
+        type: string
+      create_release:
+        description: 'Create a GitHub release?'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install System Dependencies
+        run: |
+          echo "📦 Instalando dependencias del sistema..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsdl2-2.0-0 \
+            libsdl2-dev \
+            libglew2.2 \
+            libglew-dev \
+            libglu1-mesa \
+            libopenal1 \
+            libusb-1.0-0 \
+            file \
+            desktop-file-utils
+          echo "✅ Dependencias instaladas"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests rich
+
+      - name: Download go-appimage
+        run: |
+          echo "📥 Descargando go-appimage (appimagetool-940)..."
+          wget -q "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-940-x86_64.AppImage"
+          chmod +x appimagetool-940-x86_64.AppImage
+          echo "✅ go-appimage descargado correctamente"
+
+      - name: Prepare Assets
+        run: |
+          mkdir -p assets
+          mv appimagetool-940-x86_64.AppImage assets/
+          
+          if [ -f sm64coopdx.png ]; then
+            mv sm64coopdx.png assets/
+            echo "✅ Icono encontrado"
+          else
+            echo "::error::Falta sm64coopdx.png en la raíz del repo"
+            exit 1
+          fi
+
+      - name: Run Builder
+        env:
+          ARCH: x86_64
+        run: |
+          echo "🔨 Construyendo AppImage con FUSE 2/3 compatibility..."
+          python 0-builder.py
+
+      - name: Verify Build
+        run: |
+          echo "📦 Archivos generados:"
+          ls -lh *.AppImage *.zip 2>/dev/null || echo "⚠️ No se encontraron archivos"
+          
+          if ls *.AppImage 1> /dev/null 2>&1; then
+            echo "✅ AppImage generado correctamente"
+          else
+            echo "::error::No se generó el AppImage"
+            exit 1
+          fi
+
+      - name: Create Tag (manual workflow only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          TAG_NAME="${{ github.event.inputs.tag_name }}"
+          echo "🏷️ Creando tag: $TAG_NAME"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME - FUSE 2/3 Compatible"
+          git push origin "$TAG_NAME"
+          
+          echo "✅ Tag creado y pusheado: $TAG_NAME"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          files: |
+            *.AppImage
+            mods-*.zip
+          body: |
+            ## 🎮 SM64 Co-op Deluxe AppImage
+            
+            ### ✨ What's New
+            - Built with **go-appimage** for universal compatibility
+            - ✅ **FUSE 2** and **FUSE 3** support
+            - ✅ Works on modern distros (CachyOS, Fedora 40+, Arch)
+            - ✅ Works on traditional distros (Ubuntu, Debian)
+            
+            ### 📦 Downloads
+            - **Sm64CoopDX-x86_64.AppImage** - Main application
+            - **mods.zip** - Mods package
+            
+            ### 🚀 Quick Start
+            ```bash
+            chmod +x Sm64CoopDX-*-x86_64.AppImage
+            ./Sm64CoopDX-*-x86_64.AppImage
+            ```
+            
+            ### 📋 Requirements
+            - Place your ROM at: `~/.local/share/sm64coopdx/baserom.us.z64`
+            
+            ---
+            **Built by:** Retired64
+            **Build tool:** go-appimage
+            ${{ github.event_name == 'workflow_dispatch' && '**Build triggered:** Manual' || '**Build triggered:** Git tag' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🎉 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Generated Files:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -lh *.AppImage *.zip 2>/dev/null || echo "No files found"
+          echo '```' >> $GITHUB_STEP_SUMMARY
