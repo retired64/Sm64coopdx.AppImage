@@ -63,20 +63,6 @@ sudo apt install libsdl2-2.0-0 libglew2.2
 
 ```
 
-**Fedora:**
-
-```bash
-sudo dnf install SDL2 glew
-
-```
-
-**Arch Linux:**
-
-```bash
-sudo pacman -S sdl2 glew
-
-```
-
 ---
 
 ## Troubleshooting
