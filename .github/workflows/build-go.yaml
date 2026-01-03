@@ -19,15 +19,10 @@ on:
 permissions:
   contents: write
 
-env:
-  APPIMAGE_EXTRACT_AND_RUN: 1
-  ARCH: x86_64
-  BUILDER_SCRIPT: "0-builder.py"
-
 jobs:
   build-release:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,15 +42,13 @@ jobs:
             libopenal1 \
             libusb-1.0-0 \
             file \
-            desktop-file-utils \
-            wget
-          echo "Dependencias instaladas correctamente"
+            desktop-file-utils
+          echo "✅ Dependencias instaladas"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
 
       - name: Install Python dependencies
         run: |
@@ -65,248 +58,98 @@ jobs:
       - name: Download go-appimage
         run: |
           echo "📥 Descargando go-appimage (appimagetool-940)..."
-          wget -q "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-940-x86_64.AppImage" \
-            -O appimagetool-940-x86_64.AppImage
+          wget -q "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-940-x86_64.AppImage"
           chmod +x appimagetool-940-x86_64.AppImage
-          echo "go-appimage descargado: $(ls -lh appimagetool-940-x86_64.AppImage)"
+          echo "✅ go-appimage descargado correctamente"
 
       - name: Prepare Assets
         run: |
           mkdir -p assets
           mv appimagetool-940-x86_64.AppImage assets/
           
-          # Manejar icono (descargar si no existe)
-          if [ ! -f sm64coopdx.png ]; then
-            echo "⚠️  Icono no encontrado en el repo, descargando..."
-            # Intentar descargar desde el repo oficial
-            wget -q "https://raw.githubusercontent.com/retired64/Sm64coopdx.AppImage/refs/heads/main/sm64coopdx.png" \
-              -O sm64coopdx.png 2>/dev/null || \
-            # Fallback a placeholder
-            wget -q "https://via.placeholder.com/256/0066cc/ffffff?text=SM64" \
-              -O sm64coopdx.png || {
-              echo "::error::No se pudo descargar el icono"
-              exit 1
-            }
-          fi
-          
           if [ -f sm64coopdx.png ]; then
             mv sm64coopdx.png assets/
-            echo "Icono preparado: $(file assets/sm64coopdx.png)"
+            echo "✅ Icono encontrado"
           else
-            echo "::error::No se pudo obtener el icono sm64coopdx.png"
+            echo "::error::Falta sm64coopdx.png en la raíz del repo"
             exit 1
           fi
-          
-          echo "📦 Contenido de assets:"
-          ls -lh assets/
 
       - name: Run Builder
-        id: build
+        env:
+          ARCH: x86_64
         run: |
           echo "🔨 Construyendo AppImage con FUSE 2/3 compatibility..."
-          python "$BUILDER_SCRIPT"
-          
-          # Capturar nombres de archivos generados
-          APPIMAGE=$(ls Sm64CoopDX-*-x86_64.AppImage 2>/dev/null | head -n1)
-          MODS_ZIP=$(ls mods-*.zip 2>/dev/null | head -n1)
-          
-          echo "appimage_name=$APPIMAGE" >> $GITHUB_OUTPUT
-          echo "mods_name=$MODS_ZIP" >> $GITHUB_OUTPUT
+          python 0-builder.py
 
       - name: Verify Build
         run: |
-          echo "📦 Verificando archivos generados..."
+          echo "📦 Archivos generados:"
+          ls -lh *.AppImage *.zip 2>/dev/null || echo "⚠️ No se encontraron archivos"
           
-          APPIMAGE="${{ steps.build.outputs.appimage_name }}"
-          MODS_ZIP="${{ steps.build.outputs.mods_name }}"
-          
-          if [ -z "$APPIMAGE" ] || [ ! -f "$APPIMAGE" ]; then
+          if ls *.AppImage 1> /dev/null 2>&1; then
+            echo "AppImage generado correctamente"
+          else
             echo "::error::No se generó el AppImage"
-            echo "Contenido del directorio:"
-            ls -la
             exit 1
           fi
-          
-          # Verificar tipo de archivo
-          echo "AppImage generado: $APPIMAGE"
-          file "$APPIMAGE"
-          ls -lh "$APPIMAGE"
-          
-          if [ -n "$MODS_ZIP" ] && [ -f "$MODS_ZIP" ]; then
-            echo "Mods generados: $MODS_ZIP"
-            ls -lh "$MODS_ZIP"
-          else
-            echo "⚠️  Archivo de mods no encontrado"
-          fi
-          
-          # Verificar que sea ejecutable
-          if [ ! -x "$APPIMAGE" ]; then
-            echo "⚠️  AppImage no es ejecutable, aplicando permisos..."
-            chmod +x "$APPIMAGE"
-          fi
-          
-          # Información adicional
-          echo "📊 Tamaño del AppImage: $(du -h "$APPIMAGE" | cut -f1)"
 
       - name: Create Tag (manual workflow only)
         if: github.event_name == 'workflow_dispatch'
         run: |
           TAG_NAME="${{ github.event.inputs.tag_name }}"
+          echo "Creando tag: $TAG_NAME"
           
-          echo "🏷️  Procesando tag: $TAG_NAME"
-          
-          # Configurar git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Verificar si el tag existe localmente
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "⚠️  Tag $TAG_NAME ya existe localmente"
-          else
-            echo "Creando nuevo tag: $TAG_NAME"
-            git tag -a "$TAG_NAME" -m "Release $TAG_NAME - FUSE 2/3 Compatible AppImage"
-          fi
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME - FUSE 2/3 Compatible"
+          git push origin "$TAG_NAME"
           
-          # Intentar push (ignorar error si ya existe remotamente)
-          if git push origin "$TAG_NAME" 2>&1 | tee push.log; then
-            echo "Tag pusheado exitosamente"
-          else
-            if grep -q "already exists" push.log; then
-              echo "⚠️  Tag ya existe remotamente, continuando..."
-            else
-              echo "::error::Error al pushear tag"
-              cat push.log
-              exit 1
-            fi
-          fi
-          
-          # Esperar a que GitHub procese el tag
-          echo "⏳ Esperando sincronización con GitHub..."
-          sleep 5
-          
-          # Limpiar log temporal
-          rm -f push.log
+          echo "Tag creado y pusheado: $TAG_NAME"
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
-        if: |
-          startsWith(github.ref, 'refs/tags/') || 
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
         with:
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: "SM64 Coop Deluxe ${{ github.event.inputs.tag_name || github.ref_name }}"
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
           files: |
-            Sm64CoopDX-*-x86_64.AppImage
+            *.AppImage
             mods-*.zip
           body: |
             ## SM64 Coop Deluxe AppImage
             
             ### What's New
             - Built with **go-appimage** for universal compatibility
-            - **FUSE 2** and **FUSE 3** support out of the box
-            - Works on modern distros (CachyOS, Fedora 40+, Arch, NixOS)
-            - Works on traditional distros (Ubuntu, Debian, Mint)
-            - No installation required - just download and run!
+            - **FUSE 2** and **FUSE 3** support
+            - Works on modern distros (CachyOS, Fedora 40+, Arch)
+            - Works on traditional distros (Ubuntu, Debian)
             
-            ### Downloads
-            - **${{ steps.build.outputs.appimage_name }}** - Main application (portable)
-            - **${{ steps.build.outputs.mods_name }}** - Mods package (optional)
+            ### 📦 Downloads
+            - **Sm64CoopDX-x86_64.AppImage** - Main application
+            - **mods.zip** - Mods package
             
             ### Quick Start
             ```bash
-            # Make executable
-            chmod +x ${{ steps.build.outputs.appimage_name }}
-            
-            # Run the game
-            ./${{ steps.build.outputs.appimage_name }}
+            chmod +x Sm64CoopDX-*-x86_64.AppImage
+            ./Sm64CoopDX-*-x86_64.AppImage
             ```
             
             ### Requirements
             - Place your ROM at: `~/.local/share/sm64coopdx/baserom.us.z64`
-            - Works on any modern Linux distribution
-            - No FUSE installation needed (auto-detects FUSE 2 or 3)
-            
-            ### Troubleshooting
-            If the AppImage doesn't run:
-            ```bash
-            # Extract and run directly
-            ./${{ steps.build.outputs.appimage_name }} --appimage-extract-and-run
-            ```
             
             ---
-            **Built by:** Retired64  
-            **Build tool:** go-appimage (appimagetool-940)  
-            **Build trigger:** ${{ github.event_name == 'workflow_dispatch' && 'Manual workflow dispatch' || format('Git tag push: {0}', github.ref_name) }}  
-            **Build date:** ${{ github.event.repository.updated_at }}
+            **Built by:** Retired64
+            **Build tool:** go-appimage
+            ${{ github.event_name == 'workflow_dispatch' && '**Build triggered:** Manual' || '**Build triggered:** Git tag' }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Build Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ github.run_number }}
-          path: |
-            Sm64CoopDX-*-x86_64.AppImage
-            mods-*.zip
-            *.log
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: Build Summary
+      - name: Summary
         if: always()
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          APPIMAGE="${{ steps.build.outputs.appimage_name }}"
-          MODS_ZIP="${{ steps.build.outputs.mods_name }}"
-          
-          if [ -f "$APPIMAGE" ]; then
-            echo "### Build Successful" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            echo "**Generated Files:**" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            ls -lh "$APPIMAGE" "$MODS_ZIP" 2>/dev/null || echo "Some files not found"
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            echo "**AppImage Details:**" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "Name: $APPIMAGE"
-            echo "Size: $(du -h "$APPIMAGE" | cut -f1)"
-            echo "Type: $(file -b "$APPIMAGE")"
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            if [ -n "$MODS_ZIP" ] && [ -f "$MODS_ZIP" ]; then
-              echo "**Mods Package:**" >> $GITHUB_STEP_SUMMARY
-              echo '```' >> $GITHUB_STEP_SUMMARY
-              echo "Name: $MODS_ZIP"
-              echo "Size: $(du -h "$MODS_ZIP" | cut -f1)"
-              echo '```' >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "### ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Check the logs above for error details." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Available files:**" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            ls -la
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "_Workflow: \`${{ github.workflow }}\` | Run: \`#${{ github.run_number }}\` | Trigger: \`${{ github.event_name }}\`_" >> $GITHUB_STEP_SUMMARY
-
-      - name: Cleanup on Failure
-        if: failure()
-        run: |
-          echo "🧹 Limpiando archivos temporales después de fallo..."
-          rm -rf AppDir _temp_extract *.log 2>/dev/null || true
-          echo "Limpieza completada"
+          echo "### Generated Files:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -lh *.AppImage *.zip 2>/dev/null || echo "No files found"
+          echo '```' >> $GITHUB_STEP_SUMMARY
