@@ -9,8 +9,8 @@ Built with **go-appimage** to ensure compatibility across modern (Arch, Fedora 4
 
 | File | Description | Link |
 | --- | --- | --- |
-| **Sm64CoopDX-x86_64.AppImage** | Main Game Executable | **[Download Latest](https://github.com/retired64/Sm64coopdx.AppImage/releases/download/v1.4/Sm64CoopDX-1.4-x86_64.AppImage)** |
-| **mods.zip** | Recommended Mods Pack | **[Download Latest](https://github.com/retired64/Sm64coopdx.AppImage/releases/download/v1.4/mods-1.4.zip)** |
+| **Sm64CoopDX-x86_64.AppImage** | Main Game Executable | **[Download Latest](https://github.com/retired64/Sm64coopdx.AppImage/releases/download/v1.4.1/Sm64CoopDX-1.4.1-x86_64.AppImage)** |
+| **mods.zip** | Recommended Mods Pack | **[Download Latest](https://github.com/retired64/Sm64coopdx.AppImage/releases/download/v1.4.1/mods-1.4.1.zip)** |
 
 
 > [!IMPORTANT]
